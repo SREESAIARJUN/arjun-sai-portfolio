@@ -1,9 +1,9 @@
 
 import React from "react";
-import { Github, Linkedin, Mail, ExternalLink, Phone } from "lucide-react";
+import { Github, Linkedin, Mail, ExternalLink } from "lucide-react";
 
 const Footer = () => {
-  // Updated social links with correct email
+  // Placeholder social links - update these with actual links
   const socialLinks = [
     { 
       name: "GitHub", 
@@ -17,7 +17,7 @@ const Footer = () => {
     },
     { 
       name: "Email", 
-      url: "mailto:sreesaiarjunwork@gmail.com", 
+      url: "mailto:arjunsai@example.com", 
       icon: <Mail className="h-5 w-5" /> 
     }
   ];
@@ -48,22 +48,12 @@ const Footer = () => {
               ))}
             </div>
             
-            <div className="space-y-3">
-              <a 
-                href="mailto:sreesaiarjunwork@gmail.com" 
-                className="inline-flex items-center text-portfolio-purple hover:underline"
-              >
-                <Mail className="mr-2 h-4 w-4" /> sreesaiarjunwork@gmail.com
-              </a>
-              <div className="block">
-                <a 
-                  href="tel:+917013889449" 
-                  className="inline-flex items-center text-portfolio-purple hover:underline"
-                >
-                  <Phone className="mr-2 h-4 w-4" /> +91 7013889449
-                </a>
-              </div>
-            </div>
+            <a 
+              href="mailto:arjunsai@example.com" 
+              className="inline-flex items-center text-portfolio-purple hover:underline"
+            >
+              arjunsai@example.com <ExternalLink className="ml-1 h-4 w-4" />
+            </a>
           </div>
           
           {/* Quick Links */}
