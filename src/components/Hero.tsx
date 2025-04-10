@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { ArrowRight, ChevronDown } from "lucide-react";
 
@@ -48,6 +47,16 @@ const Hero = () => {
 
       {/* Hero content */}
       <div className="container mx-auto text-center relative z-10">
+
+        {/* Profile Picture */}
+        <div className="flex justify-center mb-6 parallax-element" data-speed-x="8" data-speed-y="8">
+          <img
+            src="/profile.jpg"
+            alt="Profile"
+            className="w-40 h-40 rounded-full object-cover border-4 border-portfolio-purple shadow-lg"
+          />
+        </div>
+
         <p className="text-portfolio-purple mb-4 font-medium parallax-element" data-speed-x="10" data-speed-y="10">
           Hello, I'm
         </p>
