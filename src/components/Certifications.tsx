@@ -11,7 +11,12 @@ interface Certification {
 const Certifications = () => {
   const certifications: Certification[] = [
     {
-      title: "ML/DL Specialization",
+      title: "Machine Learning Specialization",
+      issuer: "Coursera",
+      year: "2023"
+    },
+    {
+      title: "Deep Learning Specialization",
       issuer: "Coursera",
       year: "2023"
     },
@@ -19,6 +24,11 @@ const Certifications = () => {
       title: "DSA with Python",
       issuer: "Coding Ninjas",
       year: "2022"
+    },
+    {
+      title: "Google Data Analytics",
+      issuer: "Google",
+      year: "2023"
     }
   ];
 
