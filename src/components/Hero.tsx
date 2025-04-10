@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { ArrowRight, ChevronDown } from "lucide-react";
-import profile from "./profile.png";
+import profile from "./profile.jpg";
 
 const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);
