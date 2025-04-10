@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Github, ExternalLink, ChevronRight, Brain, BookOpen, Medal, MonitorSmartphone, HeartPulse, UserCheck, Kidney, Code, Bot } from "lucide-react";
+import { Github, ExternalLink, ChevronRight, Brain, BookOpen, Medal, MonitorSmartphone, HeartPulse, UserCheck, Activity, Code, Bot } from "lucide-react";
 
 interface Project {
   title: string;
@@ -85,7 +85,7 @@ const Projects = () => {
       github: "https://github.com/SREESAIARJUN/Kidney-stone-detection-using-cnn-lstm",
       live: "https://kidney-stone-detection-using-cnn-lstm.streamlit.app/",
       image: "https://via.placeholder.com/640x360/1A1F2C/FFFFFF?text=Kidney+Stone+Detection",
-      icon: <Kidney className="h-6 w-6" />
+      icon: <Activity className="h-6 w-6" />
     },
     {
       title: "Web Tech Tutorials",
