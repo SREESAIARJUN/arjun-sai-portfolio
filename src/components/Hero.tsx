@@ -52,7 +52,7 @@ const Hero = () => {
         {/* Profile Picture */}
         <div className="flex justify-center mb-6 parallax-element" data-speed-x="8" data-speed-y="8">
           <img
-            src= profile
+            src= {profile}
             alt="Profile"
             className="w-40 h-40 rounded-full object-cover border-4 border-portfolio-purple shadow-lg"
           />
