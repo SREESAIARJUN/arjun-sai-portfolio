@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Code, Server, Database, Cloud, Brain } from "lucide-react";
 
@@ -13,7 +12,7 @@ const Skills = () => {
     {
       title: "Languages",
       icon: <Code className="h-5 w-5" />,
-      skills: ["Python (Expert)", "Mojo (Familiar)", "SQL", "HTML/CSS", "JavaScript"]
+      skills: ["Python (Expert)", "Mojo (Familiar)", "SQL", "HTML/CSS", "Java (Intermediate)", "C++ (Beginner)"]
     },
     {
       title: "AI/ML",
