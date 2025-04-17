@@ -23,7 +23,7 @@ const Certifications = () => {
     {
       title: "DSA with Python",
       issuer: "Coding Ninjas", 
-      year: "2022"  // Note: This was already correct
+      year: "2022"
     },
     {
       title: "Google Data Analytics",
@@ -46,12 +46,12 @@ const Certifications = () => {
             >
               <div className="flex gap-3 items-start">
                 <CheckCircle className="h-6 w-6 text-portfolio-purple flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="text-lg font-semibold">{cert.title}</h3>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-muted-foreground">{cert.issuer}</p>
-                    <p className="text-sm text-portfolio-purple">{cert.year}</p>
+                <div className="flex-grow">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">{cert.title}</h3>
+                    <p className="text-sm text-portfolio-purple ml-2">{cert.year}</p>
                   </div>
+                  <p className="text-muted-foreground">{cert.issuer}</p>
                 </div>
               </div>
             </div>
