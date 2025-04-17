@@ -17,13 +17,13 @@ const Certifications = () => {
     },
     {
       title: "Deep Learning Specialization",
-      issuer: "Coursera",
+      issuer: "Coursera", 
       year: "2023"
     },
     {
       title: "DSA with Python",
-      issuer: "Coding Ninjas",
-      year: "2022"
+      issuer: "Coding Ninjas", 
+      year: "2022"  // Note: This was already correct
     },
     {
       title: "Google Data Analytics",
