@@ -11,6 +11,7 @@ import Achievements from "../components/Achievements";
 import Certifications from "../components/Certifications";
 import Footer from "../components/Footer";
 import AnimatedCursor from "../components/AnimatedCursor";
+import ChatBot from "../components/ChatBot";
 
 const Index = () => {
   useEffect(() => {
@@ -31,6 +32,7 @@ const Index = () => {
       <Achievements />
       <Certifications />
       <Footer />
+      <ChatBot />
     </div>
   );
 };
