@@ -15,135 +15,298 @@ const FuturisticBackground = () => {
     
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
     containerRef.current.appendChild(renderer.domElement);
 
-    // Create multiple particle systems
-    const createParticleSystem = (count: number, size: number, color: string, spread: number) => {
+    // Advanced particle systems with glowing effect
+    const createGlowingParticleSystem = (count: number, size: number, color: string, spread: number, speed: number) => {
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(count * 3);
       const velocities = new Float32Array(count * 3);
+      const scales = new Float32Array(count);
+      const opacities = new Float32Array(count);
 
-      for (let i = 0; i < count * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * spread;
-        positions[i + 1] = (Math.random() - 0.5) * spread;
-        positions[i + 2] = (Math.random() - 0.5) * spread;
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * spread;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * spread;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * spread;
 
-        velocities[i] = (Math.random() - 0.5) * 0.02;
-        velocities[i + 1] = (Math.random() - 0.5) * 0.02;
-        velocities[i + 2] = (Math.random() - 0.5) * 0.02;
+        velocities[i * 3] = (Math.random() - 0.5) * speed;
+        velocities[i * 3 + 1] = (Math.random() - 0.5) * speed;
+        velocities[i * 3 + 2] = (Math.random() - 0.5) * speed;
+
+        scales[i] = Math.random() * 0.5 + 0.5;
+        opacities[i] = Math.random() * 0.5 + 0.5;
       }
 
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+      geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+      geometry.setAttribute('opacity', new THREE.BufferAttribute(opacities, 1));
 
+      // Create a custom shader material for glowing particles
       const material = new THREE.PointsMaterial({
         size,
         color: new THREE.Color(color),
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.9,
         blending: THREE.AdditiveBlending,
+        map: createParticleTexture(),
+        depthWrite: false,
       });
 
-      return new THREE.Points(geometry, material);
+      return {
+        points: new THREE.Points(geometry, material),
+        update: () => {
+          const positions = geometry.attributes.position.array as Float32Array;
+          const velocities = geometry.attributes.velocity.array as Float32Array;
+          const scales = geometry.attributes.scale.array as Float32Array;
+          const opacities = geometry.attributes.opacity.array as Float32Array;
+
+          for (let i = 0; i < count; i++) {
+            positions[i * 3] += velocities[i * 3];
+            positions[i * 3 + 1] += velocities[i * 3 + 1];
+            positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+            // Boundary check and reverse direction
+            if (Math.abs(positions[i * 3]) > spread / 2) velocities[i * 3] *= -1;
+            if (Math.abs(positions[i * 3 + 1]) > spread / 2) velocities[i * 3 + 1] *= -1;
+            if (Math.abs(positions[i * 3 + 2]) > spread / 2) velocities[i * 3 + 2] *= -1;
+
+            // Pulse effect for scale and opacity
+            scales[i] = 0.5 + 0.5 * Math.sin(Date.now() * 0.001 + i);
+            opacities[i] = 0.5 + 0.5 * Math.cos(Date.now() * 0.0005 + i);
+          }
+
+          geometry.attributes.position.needsUpdate = true;
+          material.size = size * (1 + 0.1 * Math.sin(Date.now() * 0.001));
+        }
+      };
     };
 
-    // Create different particle systems
+    // Create particle texture for better-looking particles
+    const createParticleTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      
+      const context = canvas.getContext('2d')!;
+      
+      // Create gradient
+      const gradient = context.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        canvas.width / 2
+      );
+      
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+      gradient.addColorStop(0.4, 'rgba(255,255,255,0.4)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    // Create enhanced particle systems
     const particleSystems = [
-      createParticleSystem(1500, 0.005, '#8B5CF6', 5), // Purple particles
-      createParticleSystem(1000, 0.003, '#D946EF', 4), // Magenta particles
-      createParticleSystem(800, 0.004, '#F97316', 3),  // Orange particles
+      createGlowingParticleSystem(2500, 0.025, '#8B5CF6', 6, 0.01), // Violet particles
+      createGlowingParticleSystem(1800, 0.02, '#D946EF', 5, 0.015), // Magenta particles 
+      createGlowingParticleSystem(1200, 0.03, '#F97316', 4, 0.02),  // Orange particles
+      createGlowingParticleSystem(1000, 0.015, '#06B6D4', 4.5, 0.018), // Cyan particles
     ];
 
-    particleSystems.forEach(system => scene.add(system));
+    particleSystems.forEach(system => scene.add(system.points));
 
-    // Create floating geometric shapes
-    const createGeometricShape = () => {
-      const geometries = [
-        new THREE.TorusGeometry(0.3, 0.1, 16, 32),
-        new THREE.OctahedronGeometry(0.2),
-        new THREE.TetrahedronGeometry(0.2),
-      ];
-
-      const materials = [
-        new THREE.MeshPhongMaterial({ color: '#8B5CF6', wireframe: true }),
-        new THREE.MeshPhongMaterial({ color: '#D946EF', wireframe: true }),
-        new THREE.MeshPhongMaterial({ color: '#F97316', wireframe: true }),
-      ];
-
+    // Create more advanced geometric shapes
+    const createGeometricShapes = () => {
       const shapes = [];
-      for (let i = 0; i < 3; i++) {
-        const mesh = new THREE.Mesh(geometries[i], materials[i]);
-        mesh.position.set(
-          (Math.random() - 0.5) * 3,
-          (Math.random() - 0.5) * 3,
-          (Math.random() - 0.5) * 3
-        );
-        shapes.push(mesh);
-      }
+      
+      // Torus with custom shader material
+      const torusGeometry = new THREE.TorusGeometry(0.5, 0.1, 32, 64);
+      const torusMaterial = new THREE.MeshPhongMaterial({ 
+        color: '#8B5CF6', 
+        wireframe: true,
+        emissive: '#5B21B6',
+        shininess: 100
+      });
+      const torus = new THREE.Mesh(torusGeometry, torusMaterial);
+      torus.position.set(1.5, 0.5, -1);
+      shapes.push(torus);
+      
+      // Icosahedron with custom shader material
+      const icosaGeometry = new THREE.IcosahedronGeometry(0.4, 1);
+      const icosaMaterial = new THREE.MeshPhongMaterial({ 
+        color: '#D946EF', 
+        wireframe: true,
+        emissive: '#9D174D',
+        shininess: 100
+      });
+      const icosahedron = new THREE.Mesh(icosaGeometry, icosaMaterial);
+      icosahedron.position.set(-1, -1, 0);
+      shapes.push(icosahedron);
+      
+      // Dodecahedron with custom shader material
+      const dodecGeometry = new THREE.DodecahedronGeometry(0.35, 0);
+      const dodecMaterial = new THREE.MeshPhongMaterial({ 
+        color: '#F97316', 
+        wireframe: true,
+        emissive: '#9A3412',
+        shininess: 100
+      });
+      const dodecahedron = new THREE.Mesh(dodecGeometry, dodecMaterial);
+      dodecahedron.position.set(-1.5, 1, -2);
+      shapes.push(dodecahedron);
+
+      // Octahedron with custom shader material
+      const octaGeometry = new THREE.OctahedronGeometry(0.3, 0);
+      const octaMaterial = new THREE.MeshPhongMaterial({ 
+        color: '#06B6D4', 
+        wireframe: true,
+        emissive: '#0E7490',
+        shininess: 100
+      });
+      const octahedron = new THREE.Mesh(octaGeometry, octaMaterial);
+      octahedron.position.set(0, -1.5, -1);
+      shapes.push(octahedron);
+      
       return shapes;
     };
 
-    const geometricShapes = createGeometricShape();
+    // Create energy connections between shapes
+    const createEnergyConnections = (shapes: THREE.Mesh[]) => {
+      const connections: THREE.Line[] = [];
+      
+      for (let i = 0; i < shapes.length; i++) {
+        for (let j = i + 1; j < shapes.length; j++) {
+          const geometry = new THREE.BufferGeometry();
+          const material = new THREE.LineBasicMaterial({ 
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending
+          });
+          
+          // Just initialize with placeholder positions
+          const points = [
+            shapes[i].position,
+            shapes[j].position
+          ];
+          
+          geometry.setFromPoints(points);
+          const line = new THREE.Line(geometry, material);
+          connections.push(line);
+        }
+      }
+      
+      return connections;
+    };
+
+    const geometricShapes = createGeometricShapes();
     geometricShapes.forEach(shape => scene.add(shape));
+    
+    const energyConnections = createEnergyConnections(geometricShapes);
+    energyConnections.forEach(line => scene.add(line));
 
     // Add lighting
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x202020);
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    // Position camera
-    camera.position.z = 3;
+    // Add a point light that moves
+    const pointLight = new THREE.PointLight(0xffffff, 1, 10);
+    pointLight.position.set(0, 0, 2);
+    scene.add(pointLight);
 
-    // Mouse movement effect
+    // Position camera
+    camera.position.z = 4;
+
+    // Mouse movement effect with improved smoothing
     let mouseX = 0;
     let mouseY = 0;
+    let targetX = 0;
+    let targetY = 0;
 
     const handleMouseMove = (event: MouseEvent) => {
-      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-      mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      targetX = (event.clientX / window.innerWidth) * 2 - 1;
+      targetY = -(event.clientY / window.innerHeight) * 2 + 1;
     };
 
     document.addEventListener('mousemove', handleMouseMove);
 
     // Animation
+    const clock = new THREE.Clock();
+    
     const animate = () => {
       requestAnimationFrame(animate);
+      const elapsedTime = clock.getElapsedTime();
+      
+      // Smoothly interpolate mouse position
+      mouseX += (targetX - mouseX) * 0.05;
+      mouseY += (targetY - mouseY) * 0.05;
 
-      // Update particle positions
-      particleSystems.forEach(system => {
-        const positions = system.geometry.attributes.position.array as Float32Array;
-        const velocities = system.geometry.attributes.velocity.array as Float32Array;
+      // Update point light position in a circular motion
+      pointLight.position.x = Math.sin(elapsedTime * 0.5) * 2;
+      pointLight.position.y = Math.cos(elapsedTime * 0.3) * 2;
+      pointLight.position.z = Math.sin(elapsedTime * 0.2) * 2 + 3;
+      
+      // Change point light color
+      const r = Math.sin(elapsedTime * 0.3) * 0.5 + 0.5;
+      const g = Math.sin(elapsedTime * 0.5) * 0.5 + 0.5;
+      const b = Math.sin(elapsedTime * 0.7) * 0.5 + 0.5;
+      pointLight.color.setRGB(r, g, b);
 
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i] += velocities[i];
-          positions[i + 1] += velocities[i + 1];
-          positions[i + 2] += velocities[i + 2];
+      // Update particle systems
+      particleSystems.forEach(system => system.update());
 
-          // Reset particles that go too far
-          if (Math.abs(positions[i]) > 5) velocities[i] *= -1;
-          if (Math.abs(positions[i + 1]) > 5) velocities[i + 1] *= -1;
-          if (Math.abs(positions[i + 2]) > 5) velocities[i + 2] *= -1;
-        }
-
-        system.geometry.attributes.position.needsUpdate = true;
-        system.rotation.x += 0.0005;
-        system.rotation.y += 0.0005;
-      });
-
-      // Animate geometric shapes
+      // Animate geometric shapes with more complex patterns
       geometricShapes.forEach((shape, index) => {
         shape.rotation.x += 0.002 * (index + 1);
         shape.rotation.y += 0.003 * (index + 1);
-        shape.position.x += Math.sin(Date.now() * 0.001 + index) * 0.002;
-        shape.position.y += Math.cos(Date.now() * 0.001 + index) * 0.002;
+        
+        // More complex orbit patterns
+        const radius = 0.5 + index * 0.2;
+        const speed = 0.2 - index * 0.03;
+        shape.position.x += Math.sin(elapsedTime * speed + index) * 0.01;
+        shape.position.y += Math.cos(elapsedTime * speed + index * 2) * 0.01;
+        shape.position.z = Math.sin(elapsedTime * speed * 0.5 + index) * 0.5;
+        
+        // Pulse the shape scale
+        const scalePulse = 1 + 0.1 * Math.sin(elapsedTime * 2 + index);
+        shape.scale.set(scalePulse, scalePulse, scalePulse);
+      });
+      
+      // Update energy connections
+      energyConnections.forEach((line, index) => {
+        const i = Math.floor(index / (geometricShapes.length - 1));
+        const j = index % (geometricShapes.length - 1) + i + 1;
+        
+        const points = [
+          geometricShapes[i].position.clone(),
+          geometricShapes[j].position.clone()
+        ];
+        
+        line.geometry.setFromPoints(points);
+        
+        // Animate line opacity based on distance
+        const dist = geometricShapes[i].position.distanceTo(geometricShapes[j].position);
+        const material = line.material as THREE.LineBasicMaterial;
+        material.opacity = 0.8 * (1 - Math.min(dist / 5, 0.8)) * (0.5 + 0.5 * Math.sin(elapsedTime * 3 + i + j));
       });
 
-      // Interactive camera movement
-      camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
-      camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.05;
+      // Interactive camera movement with smoother transitions
+      camera.position.x += (mouseX * 1.5 - camera.position.x) * 0.03;
+      camera.position.y += (mouseY * 1.5 - camera.position.y) * 0.03;
       camera.lookAt(scene.position);
 
       renderer.render(scene, camera);
@@ -173,7 +336,7 @@ const FuturisticBackground = () => {
     <div 
       ref={containerRef} 
       className="absolute inset-0 -z-10"
-      style={{ opacity: 0.7 }}
+      style={{ opacity: 0.8 }} // Slightly increased opacity for more impact
     />
   );
 };
