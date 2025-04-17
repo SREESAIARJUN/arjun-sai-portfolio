@@ -180,12 +180,17 @@ const FuturisticBackground = () => {
       return shapes;
     };
 
-    // Create energy connections between shapes
+    // Create energy connections between shapes - Fix the error by ensuring proper initialization
     const createEnergyConnections = (shapes: THREE.Mesh[]) => {
       const connections: THREE.Line[] = [];
       
+      // Only create connections if we have at least 2 shapes
+      if (shapes.length < 2) return connections;
+      
       for (let i = 0; i < shapes.length; i++) {
         for (let j = i + 1; j < shapes.length; j++) {
+          if (!shapes[i] || !shapes[j]) continue; // Skip if shape doesn't exist
+          
           const geometry = new THREE.BufferGeometry();
           const material = new THREE.LineBasicMaterial({ 
             color: 0xffffff,
@@ -194,10 +199,10 @@ const FuturisticBackground = () => {
             blending: THREE.AdditiveBlending
           });
           
-          // Just initialize with placeholder positions
+          // Initialize with valid positions
           const points = [
-            shapes[i].position,
-            shapes[j].position
+            shapes[i].position.clone(),
+            shapes[j].position.clone()
           ];
           
           geometry.setFromPoints(points);
@@ -269,40 +274,54 @@ const FuturisticBackground = () => {
       // Update particle systems
       particleSystems.forEach(system => system.update());
 
-      // Animate geometric shapes with more complex patterns
-      geometricShapes.forEach((shape, index) => {
-        shape.rotation.x += 0.002 * (index + 1);
-        shape.rotation.y += 0.003 * (index + 1);
-        
-        // More complex orbit patterns
-        const radius = 0.5 + index * 0.2;
-        const speed = 0.2 - index * 0.03;
-        shape.position.x += Math.sin(elapsedTime * speed + index) * 0.01;
-        shape.position.y += Math.cos(elapsedTime * speed + index * 2) * 0.01;
-        shape.position.z = Math.sin(elapsedTime * speed * 0.5 + index) * 0.5;
-        
-        // Pulse the shape scale
-        const scalePulse = 1 + 0.1 * Math.sin(elapsedTime * 2 + index);
-        shape.scale.set(scalePulse, scalePulse, scalePulse);
-      });
+      // Animation safety - Only proceed if all arrays are properly initialized
+      if (geometricShapes && geometricShapes.length > 0) {
+        // Animate geometric shapes with more complex patterns
+        geometricShapes.forEach((shape, index) => {
+          if (!shape) return; // Skip if the shape is undefined
+          
+          shape.rotation.x += 0.002 * (index + 1);
+          shape.rotation.y += 0.003 * (index + 1);
+          
+          // More complex orbit patterns
+          const radius = 0.5 + index * 0.2;
+          const speed = 0.2 - index * 0.03;
+          shape.position.x += Math.sin(elapsedTime * speed + index) * 0.01;
+          shape.position.y += Math.cos(elapsedTime * speed + index * 2) * 0.01;
+          shape.position.z = Math.sin(elapsedTime * speed * 0.5 + index) * 0.5;
+          
+          // Pulse the shape scale
+          const scalePulse = 1 + 0.1 * Math.sin(elapsedTime * 2 + index);
+          shape.scale.set(scalePulse, scalePulse, scalePulse);
+        });
+      }
       
-      // Update energy connections
-      energyConnections.forEach((line, index) => {
-        const i = Math.floor(index / (geometricShapes.length - 1));
-        const j = index % (geometricShapes.length - 1) + i + 1;
-        
-        const points = [
-          geometricShapes[i].position.clone(),
-          geometricShapes[j].position.clone()
-        ];
-        
-        line.geometry.setFromPoints(points);
-        
-        // Animate line opacity based on distance
-        const dist = geometricShapes[i].position.distanceTo(geometricShapes[j].position);
-        const material = line.material as THREE.LineBasicMaterial;
-        material.opacity = 0.8 * (1 - Math.min(dist / 5, 0.8)) * (0.5 + 0.5 * Math.sin(elapsedTime * 3 + i + j));
-      });
+      // Safely update energy connections with proper error checking
+      if (energyConnections && energyConnections.length > 0 && geometricShapes && geometricShapes.length > 1) {
+        energyConnections.forEach((line, index) => {
+          // Calculate the indices safely
+          const i = Math.floor(index / Math.max(1, geometricShapes.length - 1));
+          let j = (index % Math.max(1, geometricShapes.length - 1)) + i + 1;
+          
+          // Ensure we're not exceeding array bounds
+          if (i >= geometricShapes.length || j >= geometricShapes.length || !geometricShapes[i] || !geometricShapes[j]) {
+            return; // Skip this iteration if the indices are invalid
+          }
+          
+          // Update the line geometry only if both shapes exist
+          const points = [
+            geometricShapes[i].position.clone(),
+            geometricShapes[j].position.clone()
+          ];
+          
+          line.geometry.setFromPoints(points);
+          
+          // Animate line opacity based on distance
+          const dist = geometricShapes[i].position.distanceTo(geometricShapes[j].position);
+          const material = line.material as THREE.LineBasicMaterial;
+          material.opacity = 0.8 * (1 - Math.min(dist / 5, 0.8)) * (0.5 + 0.5 * Math.sin(elapsedTime * 3 + i + j));
+        });
+      }
 
       // Interactive camera movement with smoother transitions
       camera.position.x += (mouseX * 1.5 - camera.position.x) * 0.03;
@@ -326,9 +345,32 @@ const FuturisticBackground = () => {
 
     // Cleanup
     return () => {
-      containerRef.current?.removeChild(renderer.domElement);
+      if (containerRef.current && containerRef.current.contains(renderer.domElement)) {
+        containerRef.current.removeChild(renderer.domElement);
+      }
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('mousemove', handleMouseMove);
+      
+      // Additional cleanup to prevent memory leaks
+      particleSystems.forEach(system => {
+        scene.remove(system.points);
+        system.points.geometry.dispose();
+        (system.points.material as THREE.Material).dispose();
+      });
+      
+      geometricShapes.forEach(shape => {
+        scene.remove(shape);
+        shape.geometry.dispose();
+        (shape.material as THREE.Material).dispose();
+      });
+      
+      energyConnections.forEach(line => {
+        scene.remove(line);
+        line.geometry.dispose();
+        (line.material as THREE.Material).dispose();
+      });
+      
+      renderer.dispose();
     };
   }, []);
 
