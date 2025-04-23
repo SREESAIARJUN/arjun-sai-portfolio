@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
+import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from "@google/genai";
 
 interface Message {
   role: "user" | "assistant";
@@ -85,39 +86,64 @@ const ChatBot = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: inputMessage }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        })
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
       });
-
-      const data = await response.json();
       
-      if (data.error) {
-        toast.error(`Error: ${data.error.message || "Failed to get response"}`);
-        return;
-      }
+      const config = {
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+            threshold: HarmBlockThreshold.OFF,
+          },
+        ],
+        responseMimeType: 'text/plain',
+        systemInstruction: {
+          text: `You are a helpful and professional AI portfolio assistant representing Kosinepalli Arjun Sai, an AI/ML engineer, GenAI researcher, and tech startup founder from Tirupati, India. Your role is to guide visitors through Arjun's portfolio, projects, research, and experience. Always be concise yet informative, engaging but technical when required.
 
-      if (data.candidates && data.candidates[0].content) {
+Arjun is a final-year B.Tech student at Mohan Babu University (CGPA: 9.82/10), pursuing a minor in AI at IIT Ropar (CGPA: 9.0/10). He's skilled in Python (expert), ML frameworks (TensorFlow, PyTorch, Scikit-learn), and has hands-on experience with NLP, LLM fine-tuning, anomaly detection, time-series forecasting, and deploying ML apps using Streamlit, FastAPI, and cloud platforms (GCP, AWS).
+
+He has developed impactful projects like:
+
+T+1 Sentinel: A trade risk engine for DTCC using Isolation Forest and LSTM.
+
+FIR LegalMate: A GenAI-based legal drafting tool using LLMs and LangChain.
+
+He's also authored two conference papers and is filing a patent on AI-based lip sync and dubbing.
+
+Arjun is an incoming intern at DTCC and works as a freelance LLM engineer at Outlier AI, having improved domain-specific LLM performance by 15%. He has attended Amazon ML Summer School and led the IEEE AI/ML student chapter at MBU.
+
+He's won 1st place at national hackathons (IBM CodeVerse, Xhorizon) and has certifications from DeepLearning.AI and Coding Ninjas.
+
+When answering, offer to show GitHub repositories, live app demos, explain technologies used, or walk through a project/research paper. If the user seems interested in startup work, mention his stealth-mode GenAI drone startup GarudaOne, focused on content creators.
+
+Always reflect Arjun's curiosity, passion for building, and technical depth in your tone.`
+        },
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      };
+      
+      // Prepare conversation history
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const chat = model.startChat({
+        history: messages.map(msg => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }]
+        })),
+        generationConfig: config,
+      });
+      
+      const result = await chat.sendMessage(inputMessage);
+      const response = await result.response;
+      const text = response.text();
+      
+      if (text) {
         const aiMessage = {
           role: "assistant" as const,
-          content: data.candidates[0].content.parts[0].text
+          content: text
         };
         setMessages(prev => [...prev, aiMessage]);
       } else {
@@ -136,6 +162,53 @@ const ChatBot = () => {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleScrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+      // Add a small message indicating navigation
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: `I've navigated you to the ${sectionId} section.` 
+      }]);
+    }
+  };
+
+  // Function to extract section links from assistant messages
+  const renderMessageWithLinks = (message: string) => {
+    const sectionMap: Record<string, string> = {
+      "about": "about",
+      "experience": "experience",
+      "projects": "projects",
+      "publications": "publications",
+      "skills": "skills",
+      "achievements": "achievements",
+      "certifications": "certifications"
+    };
+    
+    // Find potential section references
+    let processedMessage = message;
+    
+    Object.entries(sectionMap).forEach(([keyword, sectionId]) => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      processedMessage = processedMessage.replace(regex, (match) => {
+        return `<span class="text-portfolio-purple cursor-pointer hover:underline" data-section="${sectionId}">${match}</span>`;
+      });
+    });
+    
+    return (
+      <div 
+        dangerouslySetInnerHTML={{ __html: processedMessage }} 
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.dataset.section) {
+            handleScrollToSection(target.dataset.section);
+          }
+        }}
+      />
+    );
   };
 
   return (
@@ -216,7 +289,10 @@ const ChatBot = () => {
                                   : "bg-muted"
                               }`}
                             >
-                              {message.content}
+                              {message.role === "assistant" 
+                                ? renderMessageWithLinks(message.content)
+                                : message.content
+                              }
                             </div>
                           </div>
                         ))}
