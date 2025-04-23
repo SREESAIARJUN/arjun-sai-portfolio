@@ -5,15 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-// -----------------------------------------
-// SECURITY NOTE:
-// Never expose your API key in frontend! Store securely on the backend or use a .env for build-time variables only.
-// For local development: create a `.env` file & use `import.meta.env.VITE_GEMINI_API_KEY`.
-// For now, we will blank the key for safety!
-const API_KEY_PLACEHOLDER = ""; // Set your Gemini API key in a .env file. (VITE_GEMINI_API_KEY)
-// -----------------------------------------
+const API_KEY_PLACEHOLDER = ""; // Set your Gemini API key in a .env file for safety
 
 interface Message {
   role: "user" | "assistant";
@@ -41,7 +35,7 @@ const ChatBot = () => {
       setIsMinimized(false);
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 100);
+      }, 120);
     }
   };
 
@@ -50,7 +44,7 @@ const ChatBot = () => {
     if (isMinimized) {
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 100);
+      }, 120);
     }
   };
 
@@ -81,9 +75,7 @@ const ChatBot = () => {
       ];
 
       const config = {
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'text/plain',
         systemInstruction: [
           {
@@ -103,11 +95,7 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
 
       const model = "gemini-2.0-flash-lite";
 
-      const response = await ai.models.generateContentStream({
-        model,
-        config,
-        contents
-      });
+      const response = await ai.models.generateContentStream({ model, config, contents });
 
       let text = "";
       for await (const chunk of response) {
@@ -190,79 +178,93 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
         <Button
           onClick={toggleChat}
           size="icon"
-          className="rounded-full h-14 w-14 shadow-lg bg-gradient-to-br from-portfolio-purple via-portfolio-magenta to-portfolio-orange animate-pulse-glow border-4 border-white/60"
-          style={{
-            boxShadow: "0 8px 32px 0 rgba(139,92,246,0.25)",
-            position: "relative"
-          }}
+          className="rounded-full h-14 w-14 shadow-lg bg-gradient-to-br from-portfolio-purple via-portfolio-magenta to-portfolio-orange animate-pulse-glow border-4 border-white/70 relative overflow-visible"
+          style={{ boxShadow: "0 0 18px 4px #D946EF88, 0 8px 32px 0 #8B5CF633" }}
+          aria-label="Open Chatbot"
+          title="Open Portfolio Assistant"
         >
-          <span className="absolute animate-ping inline-flex h-full w-full rounded-full bg-portfolio-purple opacity-25 left-0 top-0"></span>
-          <Bot className="relative h-8 w-8 text-white" />
+          <span className="absolute animate-ping inline-flex h-full w-full rounded-full bg-portfolio-purple opacity-30 left-0 top-0 blur-md"></span>
+          <span className="absolute animate-pulse inline-flex h-full w-full rounded-full bg-portfolio-magenta opacity-20 left-0 top-0"></span>
+          <Bot className="relative h-8 w-8 text-white drop-shadow-lg" />
         </Button>
       )}
       {isOpen && (
-        <div className="animate-scale-in origin-bottom-right">
-          <Card className="w-80 shadow-xl transition-all duration-300 ease-in-out border-0 relative glass-morphism
-            bg-white/80 dark:bg-dark/80 backdrop-blur-2xl before:content-[''] before:absolute before:-inset-1
-            before:rounded-2xl before:bg-gradient-to-br before:from-portfolio-purple before:via-portfolio-magenta before:to-portfolio-orange before:opacity-60 before:-z-10">
-            {/* Glow/Highlight Border Animated */}
-            <span className="pointer-events-none absolute -inset-1 rounded-2xl z-0 bg-gradient-to-br from-portfolio-purple via-portfolio-magenta to-portfolio-orange opacity-80 animate-gradient-x blur-[8px]"></span>
-            <CardHeader className="p-3 border-b border-portfolio-purple/30 flex flex-row justify-between items-center bg-white/60 dark:bg-dark/60 rounded-t-2xl shadow-sm">
+        <div className="animate-scale origin-bottom-right shadow-2xl rounded-3xl overflow-hidden w-80 max-w-[90vw] bg-gradient-to-br from-portfolio-purple/90 via-portfolio-magenta/90 to-portfolio-orange/90 border border-portfolio-magenta/60">
+          <Card className="bg-white/10 backdrop-blur-lg border-0 shadow-none rounded-3xl overflow-hidden relative">
+            {/* Highlight border gradient animation behind the card */}
+            <span className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-portfolio-purple via-portfolio-magenta to-portfolio-orange opacity-50 animate-gradient-x blur-[30px] -z-10"></span>
+            <CardHeader className="p-3 border-b border-portfolio-purple/40 flex justify-between items-center backdrop-blur-md bg-white/20 dark:bg-dark/30 shadow-lg rounded-t-3xl select-none">
               <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-portfolio-purple" />
-                <span className="font-semibold text-portfolio-purple drop-shadow-sm text-lg tracking-wide">Portfolio Assistant</span>
+                <Bot className="h-5 w-5 text-white drop-shadow-lg" />
+                <span className="font-semibold text-white tracking-wide drop-shadow-md text-lg select-text">Portfolio Assistant</span>
               </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleMinimize}>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-white hover:text-portfolio-magenta focus-visible:ring-2 focus-visible:ring-portfolio-magenta/60"
+                  onClick={toggleMinimize}
+                  aria-label={isMinimized ? "Maximize Chatbot" : "Minimize Chatbot"}
+                  title={isMinimized ? "Maximize Chatbot" : "Minimize Chatbot"}
+                >
                   {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleChat}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-white hover:text-portfolio-magenta focus-visible:ring-2 focus-visible:ring-portfolio-magenta/60"
+                  onClick={toggleChat}
+                  aria-label="Close Chatbot"
+                  title="Close Chatbot"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
             {!isMinimized && (
               <>
-                <CardContent className="p-3 h-72 overflow-y-auto bg-white/40 dark:bg-dark/40 transition-all glass-effect rounded-b-none rounded-t-none">
+                <CardContent className="p-3 h-72 overflow-y-auto bg-white/10 dark:bg-dark/20 rounded-b-none rounded-t-none scrollbar-thin scrollbar-thumb-portfolio-magenta scrollbar-track-transparent transition-all duration-500 animate-fade-in">
                   {messages.length === 0 ? (
-                    <div className="h-full flex flex-col justify-center items-center text-center text-muted-foreground animate-fade-in">
-                      <Bot className="h-12 w-12 mb-2 text-portfolio-purple opacity-50 animate-float" />
-                      <p className="text-base text-portfolio-purple/90 font-medium">Hi there! I'm your portfolio assistant.</p>
-                      <p className="text-xs mt-1 text-muted-foreground">Ask me anything about Arjun's skills, projects or experience.</p>
+                    <div className="h-full flex flex-col justify-center items-center text-center text-white animate-fade-in-up">
+                      <Bot className="h-12 w-12 mb-3 text-portfolio-magenta opacity-70 animate-float drop-shadow-lg" />
+                      <p className="text-base font-medium drop-shadow-md leading-snug select-text">
+                        Hi there! I'm your portfolio assistant.
+                      </p>
+                      <p className="text-xs mt-1 text-white/90 max-w-[85%] select-text">
+                        Ask me anything about Arjun's skills, projects or experience.
+                      </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {messages.map((message, index) => (
                         <div
                           key={index}
                           className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-[90%] rounded-lg px-3 py-2 text-sm shadow
-                              ${message.role === "user"
-                                ? "bg-gradient-to-br from-portfolio-purple to-portfolio-magenta text-white font-semibold animate-fade-in-up"
-                                : "bg-muted bg-opacity-80 text-gray-900 dark:text-gray-200 animate-fade-in"
+                            className={`max-w-[90%] rounded-lg px-4 py-2 text-sm backdrop-blur-sm shadow-lg
+                              ${
+                                message.role === "user"
+                                  ? "bg-gradient-to-br from-portfolio-purple to-portfolio-magenta text-white font-semibold animate-fade-in-up shadow-portfolio-magenta/60"
+                                  : "bg-white/10 text-white shadow-white/20"
                               }`}
                             style={{
-                              border: message.role === "user"
-                                ? "1.5px solid #D946EF"
-                                : "1px solid #e5e7eb"
+                              border: message.role === "user" ? "1.8px solid #D946EF" : "1px solid rgba(255,255,255,0.15)",
                             }}
                           >
                             {message.role === "assistant"
                               ? renderMessageWithLinks(message.content)
-                              : message.content
-                            }
+                              : message.content}
                           </div>
                         </div>
                       ))}
                       {isLoading && (
                         <div className="flex justify-start">
-                          <div className="max-w-[90%] rounded-lg px-3 py-2 text-sm bg-muted">
-                            <div className="flex space-x-1 items-center">
-                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
-                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
-                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
+                          <div className="max-w-[90%] rounded-lg px-3 py-2 text-sm bg-white/20 backdrop-blur-sm animate-pulse shadow-inner shadow-portfolio-magenta/30">
+                            <div className="flex space-x-2 items-center">
+                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                              <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.15s]" />
+                              <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.3s]" />
                             </div>
                           </div>
                         </div>
@@ -271,23 +273,25 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
                     </div>
                   )}
                 </CardContent>
-                <CardFooter className="p-3 pt-2 border-t border-portfolio-purple/20 flex gap-2 bg-white/80 dark:bg-dark/30 rounded-b-2xl">
+                <CardFooter className="p-3 pt-2 border-t border-portfolio-magenta/40 flex gap-2 bg-white/20 backdrop-blur-md rounded-b-3xl">
                   <Input
                     ref={inputRef}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
-                    className="text-sm bg-white/80 dark:bg-dark/40 border-portfolio-purple/10 focus:border-portfolio-purple focus:ring-portfolio-purple shadow"
+                    className="text-sm bg-white/10 text-white placeholder-white/50 border border-portfolio-magenta/50 focus:border-portfolio-magenta focus:ring-portfolio-magenta shadow-md"
                     disabled={isLoading}
+                    aria-label="Chat input"
                   />
                   <Button
                     size="icon"
                     onClick={sendMessage}
                     disabled={!inputMessage.trim() || isLoading}
-                    className="bg-gradient-to-br from-portfolio-purple via-portfolio-magenta to-portfolio-orange hover:brightness-105 drop-shadow-lg"
+                    className="bg-gradient-to-br from-portfolio-purple via-portfolio-magenta to-portfolio-orange hover:brightness-110 shadow-lg"
+                    aria-label="Send message"
                   >
-                    <Send className="h-4 w-4 text-white" />
+                    <Send className="h-5 w-5 text-white drop-shadow-md" />
                   </Button>
                 </CardFooter>
               </>
@@ -297,22 +301,48 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
       )}
       <style>
         {`
-        /* Animated pulse for launch btn */
-        @keyframes pulse-glow {
-          0% { box-shadow: 0 0 0 0 #D946EF44, 0 8px 32px 0 #8B5CF633; }
-          70% { box-shadow: 0 0 0 16px #D946EF00, 0 8px 32px 0 #8B5CF61A; }
-          100% { box-shadow: 0 0 0 0 #D946EF44, 0 8px 32px 0 #8B5CF633; }
-        }
-        .animate-pulse-glow { animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        /* Moving gradient border on Card */
-        @keyframes gradient-x {
-          0%,100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient-x { background-size: 200% 200%; animation: gradient-x 4s ease-in-out infinite; }
-        /* Modern glassmorphism utility */
-        .glass-morphism { backdrop-filter: blur(18px) saturate(110%); -webkit-backdrop-filter: blur(18px) saturate(110%);
-          border-radius: 1rem; border: 1.5px solid rgba(139,92,246,0.22); }
+          @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 #D946EF70, 0 8px 32px 0 #8B5CF644; }
+            70% { box-shadow: 0 0 0 24px #D946EF00, 0 8px 32px 0 #8B5CF61A; }
+            100% { box-shadow: 0 0 0 0 #D946EF70, 0 8px 32px 0 #8B5CF644; }
+          }
+          .animate-pulse-glow {
+            animation: pulse-glow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          }
+          @keyframes gradient-x {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          .animate-gradient-x {
+            background-size: 300% 300%;
+            animation: gradient-x 6s ease-in-out infinite;
+          }
+          @keyframes fade-in {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+          }
+          .animate-scale {
+            animation: fade-in 0.3s ease forwards;
+          }
+          @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in-up {
+            animation: fade-in-up 0.25s ease forwards;
+          }
+          .scrollbar-thin {
+            scrollbar-width: thin;
+          }
+          .scrollbar-thumb-portfolio-magenta::-webkit-scrollbar-thumb {
+            background-color: #D946EF;
+            border-radius: 9999px;
+          }
+          .scrollbar-thumb-portfolio-magenta {
+            background-color: #D946EF;
+            scrollbar-color: #D946EF transparent;
+            border-radius: 9999px;
+          }
         `}
       </style>
     </div>
