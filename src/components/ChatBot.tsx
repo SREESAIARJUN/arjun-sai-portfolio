@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Bot, Send, X, Minimize2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,6 @@ const ChatBot = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if API key exists in localStorage
     const savedApiKey = localStorage.getItem("gemini-api-key");
     if (savedApiKey) {
       setApiKey(savedApiKey);
@@ -34,7 +32,6 @@ const ChatBot = () => {
   }, []);
 
   useEffect(() => {
-    // Scroll to bottom of messages
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
@@ -79,7 +76,7 @@ const ChatBot = () => {
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || !apiKey || isLoading) return;
-    
+
     const userMessage = { role: "user" as const, content: inputMessage };
     setMessages([...messages, userMessage]);
     setInputMessage("");
@@ -89,19 +86,28 @@ const ChatBot = () => {
       const ai = new GoogleGenAI({
         apiKey: apiKey,
       });
-      
-      const config = {
-        safetySettings: [
-          {
-            category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
-            threshold: HarmBlockThreshold.OFF,
-          },
-        ],
-        responseMimeType: 'text/plain',
-        systemInstruction: {
-          text: `You are a helpful and professional AI portfolio assistant representing Kosinepalli Arjun Sai, an AI/ML engineer, GenAI researcher, and tech startup founder from Tirupati, India. Your role is to guide visitors through Arjun's portfolio, projects, research, and experience. Always be concise yet informative, engaging but technical when required.
 
-Arjun is a final-year B.Tech student at Mohan Babu University (CGPA: 9.82/10), pursuing a minor in AI at IIT Ropar (CGPA: 9.0/10). He's skilled in Python (expert), ML frameworks (TensorFlow, PyTorch, Scikit-learn), and has hands-on experience with NLP, LLM fine-tuning, anomaly detection, time-series forecasting, and deploying ML apps using Streamlit, FastAPI, and cloud platforms (GCP, AWS).
+      const contents = [
+        ...messages.map((msg) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }]
+        })),
+        {
+          role: "user",
+          parts: [{ text: inputMessage }]
+        }
+      ];
+
+      const config = {
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+        responseMimeType: 'text/plain',
+        systemInstruction: [
+          {
+            text: `You are a helpful and professional AI portfolio assistant also an AI twin of Kosinepalli Arjun Sai, an AI/ML engineer, GenAI researcher, and tech startup founder from Tirupati, India. Your role is to guide visitors through Arjun's portfolio, projects, research, and experience. Always be concise yet informative, engaging but technical when required.
+
+Arjun is a final-year B.Tech student at Mohan Babu University (CGPA: 9.82/10), pursuing a minor in AI at IIT Ropar (CGPA: 9.0/10). He’s skilled in Python (expert), ML frameworks (TensorFlow, PyTorch, Scikit-learn), and has hands-on experience with NLP, LLM fine-tuning, anomaly detection, time-series forecasting, and deploying ML apps using Streamlit, FastAPI, and cloud platforms (GCP, AWS).
 
 He has developed impactful projects like:
 
@@ -109,38 +115,34 @@ T+1 Sentinel: A trade risk engine for DTCC using Isolation Forest and LSTM.
 
 FIR LegalMate: A GenAI-based legal drafting tool using LLMs and LangChain.
 
-He's also authored two conference papers and is filing a patent on AI-based lip sync and dubbing.
+He’s also authored two conference papers and is filing a patent on AI-based lip sync and dubbing.
 
 Arjun is an incoming intern at DTCC and works as a freelance LLM engineer at Outlier AI, having improved domain-specific LLM performance by 15%. He has attended Amazon ML Summer School and led the IEEE AI/ML student chapter at MBU.
 
-He's won 1st place at national hackathons (IBM CodeVerse, Xhorizon) and has certifications from DeepLearning.AI and Coding Ninjas.
+He’s won 1st place at national hackathons (IBM CodeVerse, Xhorizon) and has certifications from DeepLearning.AI and Coding Ninjas.
 
 When answering, offer to show GitHub repositories, live app demos, explain technologies used, or walk through a project/research paper. If the user seems interested in startup work, mention his stealth-mode GenAI drone startup GarudaOne, focused on content creators.
 
-Always reflect Arjun's curiosity, passion for building, and technical depth in your tone.`
-        },
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
+Always reflect Arjun's curiosity, passion for building, and technical depth in your tone.`,
+          }
+        ],
       };
-      
-      // Prepare conversation history
-      // FIX: Use the correct method - gemini is the property that contains models
-      const model = ai.gemini("gemini-1.5-flash");
-      
-      const chat = model.startChat({
-        history: messages.map(msg => ({
-          role: msg.role === "user" ? "user" : "model",
-          parts: [{ text: msg.content }]
-        })),
-        generationConfig: config,
+
+      const model = "gemini-2.0-flash-lite";
+
+      const response = await ai.models.generateContentStream({
+        model,
+        config,
+        contents
       });
-      
-      const result = await chat.sendMessage(inputMessage);
-      const response = await result.response;
-      const text = response.text();
-      
+
+      let text = "";
+      for await (const chunk of response) {
+        if (chunk && typeof chunk.text === "string") {
+          text += chunk.text;
+        }
+      }
+
       if (text) {
         const aiMessage = {
           role: "assistant" as const,
@@ -169,7 +171,6 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
     const section = document.getElementById(sectionId);
     if (section) {
       section.scrollIntoView({ behavior: "smooth" });
-      // Add a small message indicating navigation
       setMessages(prev => [...prev, { 
         role: "assistant", 
         content: `I've navigated you to the ${sectionId} section.` 
@@ -177,7 +178,6 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
     }
   };
 
-  // Function to extract section links from assistant messages
   const renderMessageWithLinks = (message: string) => {
     const sectionMap: Record<string, string> = {
       "about": "about",
@@ -189,7 +189,6 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
       "certifications": "certifications"
     };
     
-    // Find potential section references
     let processedMessage = message;
     
     Object.entries(sectionMap).forEach(([keyword, sectionId]) => {
@@ -214,7 +213,6 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      {/* Chat toggle button */}
       {!isOpen && (
         <Button 
           onClick={toggleChat} 
@@ -225,7 +223,6 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
         </Button>
       )}
 
-      {/* Chat window */}
       {isOpen && (
         <Card className="w-80 shadow-xl transition-all duration-300 ease-in-out">
           <CardHeader className="p-3 border-b flex flex-row justify-between items-center">
