@@ -126,7 +126,8 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
       };
       
       // Prepare conversation history
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // FIX: Use the correct method - gemini is the property that contains models
+      const model = ai.gemini("gemini-1.5-flash");
       
       const chat = model.startChat({
         history: messages.map(msg => ({
