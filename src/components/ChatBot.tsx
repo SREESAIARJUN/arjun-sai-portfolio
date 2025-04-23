@@ -14,22 +14,14 @@ interface Message {
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [apiKey, setApiKey] = useState<string>("");
-  const [isKeySet, setIsKeySet] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
+  const API_KEY = "AIzaSyAZn35XN5nxjiW0COUFJqG5HjNhnnnO79M";
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem("gemini-api-key");
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-      setIsKeySet(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -56,26 +48,8 @@ const ChatBot = () => {
     }
   };
 
-  const saveApiKey = () => {
-    if (!apiKey.trim()) {
-      toast.error("Please enter a valid API key");
-      return;
-    }
-    
-    localStorage.setItem("gemini-api-key", apiKey);
-    setIsKeySet(true);
-    toast.success("API key saved successfully");
-  };
-
-  const clearApiKey = () => {
-    localStorage.removeItem("gemini-api-key");
-    setApiKey("");
-    setIsKeySet(false);
-    toast.success("API key removed");
-  };
-
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !apiKey || isLoading) return;
+    if (!inputMessage.trim() || isLoading) return;
 
     const userMessage = { role: "user" as const, content: inputMessage };
     setMessages([...messages, userMessage]);
@@ -84,7 +58,7 @@ const ChatBot = () => {
 
     try {
       const ai = new GoogleGenAI({
-        apiKey: apiKey,
+        apiKey: API_KEY,
       });
 
       const contents = [
@@ -154,7 +128,7 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
       }
     } catch (error) {
       console.error("Error calling Gemini API:", error);
-      toast.error("Failed to connect to Gemini API. Please check your API key and try again.");
+      toast.error("Failed to connect to Gemini API. Please check the API key.");
     } finally {
       setIsLoading(false);
     }
@@ -164,17 +138,6 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
-    }
-  };
-
-  const handleScrollToSection = (sectionId: string) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-      setMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: `I've navigated you to the ${sectionId} section.` 
-      }]);
     }
   };
 
@@ -211,6 +174,17 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
     );
   };
 
+  const handleScrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: `I've navigated you to the ${sectionId} section.` 
+      }]);
+    }
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {!isOpen && (
@@ -242,102 +216,68 @@ Always reflect Arjun's curiosity, passion for building, and technical depth in y
 
           {!isMinimized && (
             <>
-              {!isKeySet ? (
-                <CardContent className="p-3 h-72 flex flex-col justify-center">
-                  <div className="space-y-3">
-                    <p className="text-sm text-center">Please enter your Gemini API key to continue:</p>
-                    <Input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="API Key"
-                      className="text-sm"
-                    />
-                    <Button 
-                      onClick={saveApiKey} 
-                      className="w-full bg-portfolio-purple hover:bg-portfolio-purple/90"
-                    >
-                      Save API Key
-                    </Button>
-                    <p className="text-xs text-center text-muted-foreground">
-                      Get your API key from <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="underline">Google AI Studio</a>
-                    </p>
+              <CardContent className="p-3 h-72 overflow-y-auto">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col justify-center items-center text-center text-muted-foreground">
+                    <Bot className="h-12 w-12 mb-2 text-portfolio-purple opacity-50" />
+                    <p className="text-sm">Hi there! I'm your portfolio assistant.</p>
+                    <p className="text-xs">Ask me anything about Arjun's skills, projects or experience.</p>
                   </div>
-                </CardContent>
-              ) : (
-                <>
-                  <CardContent className="p-3 h-72 overflow-y-auto">
-                    {messages.length === 0 ? (
-                      <div className="h-full flex flex-col justify-center items-center text-center text-muted-foreground">
-                        <Bot className="h-12 w-12 mb-2 text-portfolio-purple opacity-50" />
-                        <p className="text-sm">Hi there! I'm your portfolio assistant.</p>
-                        <p className="text-xs">Ask me anything about Arjun's skills, projects or experience.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {messages.map((message, index) => (
+                      <div 
+                        key={index} 
+                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div 
+                          className={`max-w-[90%] rounded-lg px-3 py-2 text-sm ${
+                            message.role === "user" 
+                              ? "bg-portfolio-purple text-white" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          {message.role === "assistant" 
+                            ? renderMessageWithLinks(message.content)
+                            : message.content
+                          }
+                        </div>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {messages.map((message, index) => (
-                          <div 
-                            key={index} 
-                            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                          >
-                            <div 
-                              className={`max-w-[90%] rounded-lg px-3 py-2 text-sm ${
-                                message.role === "user" 
-                                  ? "bg-portfolio-purple text-white" 
-                                  : "bg-muted"
-                              }`}
-                            >
-                              {message.role === "assistant" 
-                                ? renderMessageWithLinks(message.content)
-                                : message.content
-                              }
-                            </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[90%] rounded-lg px-3 py-2 text-sm bg-muted">
+                          <div className="flex space-x-1 items-center">
+                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
+                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
+                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
                           </div>
-                        ))}
-                        {isLoading && (
-                          <div className="flex justify-start">
-                            <div className="max-w-[90%] rounded-lg px-3 py-2 text-sm bg-muted">
-                              <div className="flex space-x-1 items-center">
-                                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
-                                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
-                                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        <div ref={messagesEndRef} />
+                        </div>
                       </div>
                     )}
-                  </CardContent>
-                  <CardFooter className="p-3 pt-2 border-t flex gap-2">
-                    <Input
-                      ref={inputRef}
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Type a message..."
-                      className="text-sm"
-                      disabled={isLoading}
-                    />
-                    <Button 
-                      size="icon" 
-                      onClick={sendMessage} 
-                      disabled={!inputMessage.trim() || isLoading}
-                      className="bg-portfolio-purple hover:bg-portfolio-purple/90"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                  <div className="p-2 pt-0 text-center">
-                    <button 
-                      onClick={clearApiKey} 
-                      className="text-xs text-muted-foreground hover:underline"
-                    >
-                      Clear API Key
-                    </button>
+                    <div ref={messagesEndRef} />
                   </div>
-                </>
-              )}
+                )}
+              </CardContent>
+              <CardFooter className="p-3 pt-2 border-t flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type a message..."
+                  className="text-sm"
+                  disabled={isLoading}
+                />
+                <Button 
+                  size="icon" 
+                  onClick={sendMessage} 
+                  disabled={!inputMessage.trim() || isLoading}
+                  className="bg-portfolio-purple hover:bg-portfolio-purple/90"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </CardFooter>
             </>
           )}
         </Card>
